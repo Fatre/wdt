@@ -1,0 +1,52 @@
+#!/bin/bash
+# Written by Mark Fritchen & Daniel Mabey
+# Copy Right is GPLV2
+
+info() {
+    cat << EOF
+WDT - WhoisDig Tool 3.1 (2016 Oct 10, modified Feb 7 2018 9:00:00)
+    Returns relevant fields from a whois and dig query for the domain.
+
+Usage: wdt [arguments] [domain ..]                  Run a Dig / Whois on the Domain(s)
+   or: wdt [-h]                                     Print this Help information
+
+Arguments:
+   -h               Print this help screen. Overrides any other options
+   -w               Print whois information for domain
+   -W               Print www. of a domain
+   -d               Print domain information
+   -p               Print domain information from NameServer's around the world
+   -@ [IP / NS]     Print domain information from specified name server
+EOF
+}
+
+ns="ns2.inmotionhosting.com";ns1="151.202.0.84";ns2="156.154.71.19";euns="91.103.112.150";euns2="164.132.130.171";sans="169.239.181.3";samns="200.49.159.68";cans="72.139.50.226";asns="202.14.93.153"
+
+
+if [ $1 ]; then
+    eval domain=\$$#
+else
+    info
+    exit
+fi
+
+set -- "${@:1:$(($#-1))}"
+nargs="$@"
+
+while getopts ":dDwW@:hHpP" opt; do
+    case $opt in
+        d | D)
+            echo "$(dig any @$ns $domain)";;
+        w | W)
+            echo "$(whois $domain)";;
+        h | H)
+            info;;
+        p | P)
+            echo "$(dig @8.8.8.8 kiageru.com) $(dig @151.202.0.85 kiageru.com)";;
+        @)
+            echo "$(dig @${OPTARG} kiageru.com)";;
+        *)
+            echo "${OPTARG} is not defined in getopts." >&2;;
+    esac
+done
+
