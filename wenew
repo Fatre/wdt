@@ -1,14 +1,13 @@
 #!/bin/bash
 # Written by Mark Fritchen & Daniel Mabey
-# Copy Right is GPLV2
 
 info() {
     cat << EOF
 WDT - WhoisDig Tool 3.1 (2016 Oct 10, modified Feb 7 2018 9:00:00)
     Returns relevant fields from a whois and dig query for the domain.
 
-Usage: wdt [arguments] [domain ..]                  Run a Dig / Whois on the Domain(s)
-   or: wdt [-h]                                     Print this Help information
+Usage: wdt [arguments] [domain ..]          Run a Dig / Whois on the Domain(s)
+   or: wdt [-h]                             Print this Help information
 
 Arguments:
    -h               Print this help screen. Overrides any other options
@@ -18,6 +17,35 @@ Arguments:
    -p               Print domain information from NameServer's around the world
    -@ [IP / NS]     Print domain information from specified name server
 EOF
+}
+
+whoisInfo() {
+    #whost=$(whois -h whois.iana.org $domain | egrep -e '^whois:' |   sed -e 's/[[:space:]][[:space:]]*/ /g' |   cut -d " " -f 2)
+    #whos=$(whois -h $whost $domain)
+    whos=$(whois $domain)
+    echo -e "***  whois  ********************************************************************"
+    LIST1=("WHOIS database:"
+    "Registrar:"
+    "Registrar Name:"
+    "Registrar WHOIS"
+    "Name Server:"
+    "Provider Name"
+    "Whois Server"
+    "Updated Date"
+    "Creation Date"
+    "Expiration"
+    "Domain Status"
+    "Registrant Email"
+    "Admin Street"
+    "Admin City"
+    "Admin State"
+    "Admin Phone"
+    "Admin Email")
+
+    for ((i = 0; i < ${#LIST1[@]}; i++))
+    do
+        echo "$whos" | grep "${LIST1[$i]}"
+    done
 }
 
 ns="ns2.inmotionhosting.com";ns1="151.202.0.84";ns2="156.154.71.19";euns="91.103.112.150";euns2="164.132.130.171";sans="169.239.181.3";samns="200.49.159.68";cans="72.139.50.226";asns="202.14.93.153"
@@ -38,7 +66,7 @@ while getopts ":dDwW@:hHpP" opt; do
         d | D)
             echo "$(dig any @$ns $domain)";;
         w | W)
-            echo "$(whois $domain)";;
+            whoisInfo;;
         h | H)
             info;;
         p | P)
@@ -46,7 +74,7 @@ while getopts ":dDwW@:hHpP" opt; do
         @)
             echo "$(dig @${OPTARG} kiageru.com)";;
         *)
-            echo "${OPTARG} is not defined in getopts." >&2;;
+            echo "$OPTARG is not defined in getopts." >&2;;
     esac
 done
 
