@@ -63,15 +63,16 @@ LIST2=(
     "TXT ")
 
 ns="ns2.inmotionhosting.com";ns1="151.202.0.84";ns2="156.154.71.19";euns="91.103.112.150";euns2="164.132.130.171";sans="169.239.181.3";samns="200.49.159.68";cans="72.139.50.226";asns="202.14.93.153"
+
 LIST5=(
-    "151.202.0.84"
-    "156.154.71.19"
-    "91.103.112.150"
-    "164.132.130.171"
-    "169.239.181.3"
-    "200.49.159.68"
-    "72.139.50.226"
-    "202.14.93.153")
+    "$ns1"
+    "$ns2"
+    "$euns"
+    "$euns2"
+    "$sans"
+    "$samns"
+    "$cans"
+    "$asns")
 
 LIST4=(
     "A\t"
@@ -89,24 +90,6 @@ LIST3=(
     "soa"
     "cname")
 
-grepDig() {
-    for ((i = 0; i < ${#LIST2[@]}; i++))
-    do
-        ekhoe=$(echo "$zoneRecord" | grep -P "HINFO")
-        if [[ $ekhoe == *"HINFO"* ]] || [[ $dD == "true" ]]
-        then
-            for ((p = 0; p < ${#LIST3[@]}; p++))
-            do
-                zoneRecord_1=$(dig ${LIST3[$p]} $dubdubdub$domain)
-                echo "$zoneRecord_1" | grep -P "${LIST2[$i]}"
-            done
-        dD=""
-        else
-            echo "$zoneRecord" | grep -P "${LIST2[$i]}"
-        fi
-    done
-}
-
 newGrepDig() {
 #  Checks to see if this is
     if [[ $ekhoe == *"HINFO"* ]] || [[ $dD == "true" ]];then
@@ -118,11 +101,11 @@ newGrepDig() {
         digDomain;digDubDomain
         echo -e "***  propergation  ************************************************  global  ***"
         for ((p = 0; p < ${#LIST5[@]}; p++));do
-            zoneRecord=$(dig @${LIST5[$p]} $domain | egrep -v *"gtld"* | egrep -v *"root."*)
+            zoneRecord=$(dig @${LIST5[$p]} $domain | egrep -v *"gtld"*)
             for ((i = 0; i < ${#LIST2[@]}; i++));do
                 echo "$zoneRecord" | grep -P "${LIST2[$i]}"
             done
-        done
+        done  
     else
         for ((i = 0; i < ${#LIST2[@]}; i++));do
             echo "$zoneRecord" | grep -P "${LIST2[$i]}"
@@ -154,9 +137,10 @@ digDomainOurNS() {
 }
 
 propagation() {
-    pP="true"
+    pP="true" 
     newGrepDig
 }
+
 
 
 if [ $1 ]; then
@@ -166,11 +150,13 @@ else
     exit
 fi
 
+echo "$domain...$@"
 set -- "${@:1:$(($#-1))}"
+echo "$domain...$@"
 nargs="$@"
 options=""
 
-while getopts ":dDwW@:hHpPk" opt; do
+while getopts ":dDwW@:hHpP" opt; do
     case $opt in
         d | D)
             digDomain; options=True;;
@@ -182,8 +168,6 @@ while getopts ":dDwW@:hHpPk" opt; do
             info;;
         p | P)
             propagation; options=True;;
-        k)
-            echo "$(dig txt default._domainkey.$domain +short)"; options=True;;
         @)
             echo "$(dig @${OPTARG} $domain)"; options=True;;
         *)
@@ -191,7 +175,7 @@ while getopts ":dDwW@:hHpPk" opt; do
     esac
 done
 
-# Options is set if WDT is ran with explicit options / arguments. The -n in the test is true if the length of the string is non-zero.
+# Options is set if WDT is ran with explicit options / arguments. The -n in the test is true if the length of the string is a non-zero.
 if [ -n "$options" ]; then
     echo -e "********************************************************************************"
     exit
@@ -200,12 +184,22 @@ else
     digDomain
     digDubDomain
 fi
-
+ 
 # Updates to come
-#
+# 
 # h trap
 # Unix long options?
-# using arguments after a domain breaks everything
+#
+#
+#
+#
+#
+#
+#
+#
+#
+# Domain Record Iteration
+# DMK?
 #
 #
 #
@@ -218,12 +212,3 @@ fi
 #
 #
 #
-#
-#
-#
-#
-#
-#
-#
-#
-
