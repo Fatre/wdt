@@ -7,7 +7,6 @@ WDT - WhoisDig Tool 3.1 (2016 Oct 10, modified Feb 7 2018 9:00:00)
     Returns relevant fields from a whois and dig query for the domain.
 
 Usage: wdt [arguments] [domain ..]          Run a Dig / Whois on the Domain(s)
-   or: wdt [-h]                             Print this Help information
 
 Arguments:
    -h               Print this help screen. Overrides any other options
@@ -57,59 +56,92 @@ LIST2=(
     "CNAME\t"
     "CNAME "
     "NS\t"
-    "NS ")
+    "NS "
+    "SOA\t"
+    "SOA "
+    "TXT\t"
+    "TXT ")
+LIST4=(
+    "A\t"
+    "MX\t"
+    "NS\t"
+    "TXT\t"
+    "SOA\t"
+    "CNAME\t")
 
 LIST3=(
     "a"
     "mx"
     "ns"
     "txt"
-    "soa")
+    "soa"
+    "cname")
 
 grepDig() {
     for ((i = 0; i < ${#LIST2[@]}; i++))
     do
         ekhoe=$(echo "$zoneRecord" | grep -P "HINFO")
-        if [[ $ekhoe == *"HINFO"* ]]
+        if [[ $ekhoe == *"HINFO"* ]] || [[ $dD == "true" ]] 
         then
             for ((p = 0; p < ${#LIST3[@]}; p++))
             do
-                zoneRecord_1=$(dig $at$ip ${LIST3[$p]} $dubdubdub$domain)
+                zoneRecord_1=$(dig ${LIST3[$p]} $dubdubdub$domain)
                 echo "$zoneRecord_1" | grep -P "${LIST2[$i]}"
             done
+        dD=""
         else
             echo "$zoneRecord" | grep -P "${LIST2[$i]}"
         fi
     done
 }
 
+newGrepDig() {
+#  Checks to see if this is
+    if [[ $ekhoe == *"HINFO"* ]] || [[ $dD == "true" ]];then
+        for ((p = 0; p < ${#LIST3[@]}; p++));do
+            zoneRecord_1=$(dig ${LIST3[$p]} $domain)
+            echo "$zoneRecord_1" | grep -P "${LIST4[$p]}"
+            #for ((i = 0; i < ${#LIST2[@]}; i++));do
+                #echo "$zoneRecord_1" | grep -P "${LIST2[$i]}"
+            #done
+        done
+    else
+        for ((i = 0; i < ${#LIST2[@]}; i++));do
+            echo "$zoneRecord" | grep -P "${LIST2[$i]}"
+            #echo "hello"
+        done
+    fi
+    dD=""
+
+}
+
 digDomain() {
     echo -e "***  non-www  ******************************************************************"
-    zoneRecord=$(dig @$ns $domain any)
-    grepDig
+    dD="true"
+    newGrepDig
 }
 
 digDubDomain() {
     echo -e "***  www  **********************************************************************"
     zoneRecord=$(dig @$ns "www."$domain any)
     dubdubdub="www."
-    grepDig
+    newGrepDig
 }
 
 digDomainOurNS() {
     echo -e "***  non-www our server  *******************************************************"
     zoneRecord=$(dig @$ns $domain any)
-    grepDig
+    newGrepDig
 }
 
 propagation() {
     echo -e "***  non-www  ******************************************************************"
     zoneRecord=$(dig @$ns $domain any)
-    grepDig
+    newGrepDig
     echo -e "***  non-www our server  *******************************************************"
     zoneRecord=$(dig $domain)
     at=""
-    grepDig
+    newGrepDig
     echo -e "***  non-www other name server  ************************************************"
     zoneRecord=$(dig @$ns1 +short $domain)
     echo -en $domain"\t\t\t\t"$zoneRecord;echo -e "\t\t$ns1"
@@ -145,7 +177,7 @@ while getopts ":dDwW@:hHpP" opt; do
         p | P)
             propagation; options=True;;
         @)
-            echo "$(dig @${OPTARG} kiageru.com)";;
+            echo "$(dig @${OPTARG} $domain)";;
         *)
             echo "$OPTARG is not defined in getopts." >&2;;
     esac
@@ -159,3 +191,33 @@ else
     digDomain
     digDubDomain
 fi
+ 
+# Updates to come
+# 
+# @ function
+# h trap
+# Unix long options?
+# change digDomain not on our ns and iterate the dig through all records as we cant dig any! change digDubDomain to include domain's A record
+#
+#
+#
+#
+#
+#
+#
+#
+#
+# Domain Record Iteration
+# A    NS    MX    CNAME   SOA?    TXT?     DMK?
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
