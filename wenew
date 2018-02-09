@@ -20,6 +20,7 @@ EOF
 }
 
 whoisInfo() {
+    # Finds the whois server for the TLD .com / .org / .ca / etc...     Then runs a whois for the domain on that server.
     #whost=$(whois -h whois.iana.org $domain | egrep -e '^whois:' |   sed -e 's/[[:space:]][[:space:]]*/ /g' |   cut -d " " -f 2)
     #whos=$(whois -h $whost $domain)
     whos=$(whois $domain)
@@ -48,6 +49,75 @@ whoisInfo() {
     done
 }
 
+LIST2=(
+    "A\t"
+    "A "
+    "MX\t"
+    "MX "
+    "CNAME\t"
+    "CNAME "
+    "NS\t"
+    "NS ")
+
+LIST3=(
+    "a"
+    "mx"
+    "ns"
+    "txt"
+    "soa")
+
+grepDig() {
+    for ((i = 0; i < ${#LIST2[@]}; i++))
+    do
+        ekhoe=$(echo "$zoneRecord" | grep -P "HINFO")
+        if [[ $ekhoe == *"HINFO"* ]]
+        then
+            for ((p = 0; p < ${#LIST3[@]}; p++))
+            do
+                zoneRecord_1=$(dig $at$ip ${LIST3[$p]} $dubdubdub$domain)
+                echo "$zoneRecord_1" | grep -P "${LIST2[$i]}"
+            done
+        else
+            echo "$zoneRecord" | grep -P "${LIST2[$i]}"
+        fi
+    done
+}
+
+digDomain() {
+    echo -e "***  non-www  ******************************************************************"
+    zoneRecord=$(dig @$ns $domain any)
+    grepDig
+}
+
+digDubDomain() {
+    echo -e "***  www  **********************************************************************"
+    zoneRecord=$(dig @$ns "www."$domain any)
+    dubdubdub="www."
+    grepDig
+}
+
+digDomainOurNS() {
+    echo -e "***  non-www our server  *******************************************************"
+    zoneRecord=$(dig @$ns $domain any)
+    grepDig
+}
+
+propagation() {
+    echo -e "***  non-www  ******************************************************************"
+    zoneRecord=$(dig @$ns $domain any)
+    grepDig
+    echo -e "***  non-www our server  *******************************************************"
+    zoneRecord=$(dig $domain)
+    at=""
+    grepDig
+    echo -e "***  non-www other name server  ************************************************"
+    zoneRecord=$(dig @$ns1 +short $domain)
+    echo -en $domain"\t\t\t\t"$zoneRecord;echo -e "\t\t$ns1"
+    echo -e "***  non-www other name server  ************************************************"
+    zoneRecord=$(dig @$ns2 +short $domain)
+    echo -en $domain"\t\t\t\t"$zoneRecord;echo -e "\t\t$ns2"
+}
+
 ns="ns2.inmotionhosting.com";ns1="151.202.0.84";ns2="156.154.71.19";euns="91.103.112.150";euns2="164.132.130.171";sans="169.239.181.3";samns="200.49.159.68";cans="72.139.50.226";asns="202.14.93.153"
 
 
@@ -60,17 +130,20 @@ fi
 
 set -- "${@:1:$(($#-1))}"
 nargs="$@"
+options=""
 
 while getopts ":dDwW@:hHpP" opt; do
     case $opt in
         d | D)
-            echo "$(dig any @$ns $domain)";;
-        w | W)
-            whoisInfo;;
+            digDomain; options=True;;
+        w)
+            whoisInfo; options=True;;
+        W)
+            digDubDomain; options=True;;
         h | H)
             info;;
         p | P)
-            echo "$(dig @8.8.8.8 kiageru.com) $(dig @151.202.0.85 kiageru.com)";;
+            propagation; options=True;;
         @)
             echo "$(dig @${OPTARG} kiageru.com)";;
         *)
@@ -78,3 +151,11 @@ while getopts ":dDwW@:hHpP" opt; do
     esac
 done
 
+if [ -n "$options" ]; then
+    echo -e "********************************************************************************"
+    exit
+else
+    whoisInfo
+    digDomain
+    digDubDomain
+fi
