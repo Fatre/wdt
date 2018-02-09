@@ -3,7 +3,7 @@
 
 info() {
     cat << EOF
-WDT - WhoisDig Tool 3.1 (2016 Oct 10, modified Feb 7 2018 9:00:00)
+WDT - WhoisDig Tool 3.2 (2016 Oct 10, modified Feb 7 2018 9:00:00)
     Returns relevant fields from a whois and dig query for the domain.
 
 Usage: wdt [arguments] [domain ..]          Run a Dig / Whois on the Domain(s)
@@ -61,6 +61,18 @@ LIST2=(
     "SOA "
     "TXT\t"
     "TXT ")
+
+ns="ns2.inmotionhosting.com";ns1="151.202.0.84";ns2="156.154.71.19";euns="91.103.112.150";euns2="164.132.130.171";sans="169.239.181.3";samns="200.49.159.68";cans="72.139.50.226";asns="202.14.93.153"
+LIST5=(
+    "151.202.0.84"
+    "156.154.71.19"
+    "91.103.112.150"
+    "164.132.130.171"
+    "169.239.181.3"
+    "200.49.159.68"
+    "72.139.50.226"
+    "202.14.93.153")
+
 LIST4=(
     "A\t"
     "MX\t"
@@ -99,30 +111,37 @@ newGrepDig() {
 #  Checks to see if this is
     if [[ $ekhoe == *"HINFO"* ]] || [[ $dD == "true" ]];then
         for ((p = 0; p < ${#LIST3[@]}; p++));do
-            zoneRecord_1=$(dig ${LIST3[$p]} $domain)
-            echo "$zoneRecord_1" | grep -P "${LIST4[$p]}"
-            #for ((i = 0; i < ${#LIST2[@]}; i++));do
-                #echo "$zoneRecord_1" | grep -P "${LIST2[$i]}"
-            #done
+            zoneRecord=$(dig ${LIST3[$p]} $domain)
+            echo "$zoneRecord" | grep -P "${LIST4[$p]}"
         done
+    elif [[ $pP == "true" ]];then
+        digDomain;digDubDomain
+        echo -e "***  propergation  ************************************************  global  ***"
+        for ((p = 0; p < ${#LIST5[@]}; p++));do
+            zoneRecord=$(dig @${LIST5[$p]} $domain | egrep -v *"gtld"*)
+            for ((i = 0; i < ${#LIST2[@]}; i++));do
+                echo "$zoneRecord" | grep -P "${LIST2[$i]}"
+            done
+        done  
     else
         for ((i = 0; i < ${#LIST2[@]}; i++));do
             echo "$zoneRecord" | grep -P "${LIST2[$i]}"
-            #echo "hello"
         done
+        foo=$(dig @$ns $domain)
+        echo "$foo" | grep -P "${LIST4[0]}" | grep "$domain"
     fi
     dD=""
-
+    pP=""
 }
 
 digDomain() {
-    echo -e "***  non-www  ******************************************************************"
+    echo -e "***  non-www  *****************************************************  global  ***"
     dD="true"
     newGrepDig
 }
 
 digDubDomain() {
-    echo -e "***  www  **********************************************************************"
+    echo -e "***  www  *********************************************************  our-ns  ***"
     zoneRecord=$(dig @$ns "www."$domain any)
     dubdubdub="www."
     newGrepDig
@@ -135,22 +154,10 @@ digDomainOurNS() {
 }
 
 propagation() {
-    echo -e "***  non-www  ******************************************************************"
-    zoneRecord=$(dig @$ns $domain any)
+    pP="true" 
     newGrepDig
-    echo -e "***  non-www our server  *******************************************************"
-    zoneRecord=$(dig $domain)
-    at=""
-    newGrepDig
-    echo -e "***  non-www other name server  ************************************************"
-    zoneRecord=$(dig @$ns1 +short $domain)
-    echo -en $domain"\t\t\t\t"$zoneRecord;echo -e "\t\t$ns1"
-    echo -e "***  non-www other name server  ************************************************"
-    zoneRecord=$(dig @$ns2 +short $domain)
-    echo -en $domain"\t\t\t\t"$zoneRecord;echo -e "\t\t$ns2"
 }
 
-ns="ns2.inmotionhosting.com";ns1="151.202.0.84";ns2="156.154.71.19";euns="91.103.112.150";euns2="164.132.130.171";sans="169.239.181.3";samns="200.49.159.68";cans="72.139.50.226";asns="202.14.93.153"
 
 
 if [ $1 ]; then
@@ -177,12 +184,13 @@ while getopts ":dDwW@:hHpP" opt; do
         p | P)
             propagation; options=True;;
         @)
-            echo "$(dig @${OPTARG} $domain)";;
+            echo "$(dig @${OPTARG} $domain)"; options=True;;
         *)
             echo "$OPTARG is not defined in getopts." >&2;;
     esac
 done
 
+# Options is set if WDT is ran with explicit options / arguments. The -n in the test is true if the length of the string is a non-zero.
 if [ -n "$options" ]; then
     echo -e "********************************************************************************"
     exit
@@ -194,10 +202,8 @@ fi
  
 # Updates to come
 # 
-# @ function
 # h trap
 # Unix long options?
-# change digDomain not on our ns and iterate the dig through all records as we cant dig any! change digDubDomain to include domain's A record
 #
 #
 #
@@ -208,7 +214,7 @@ fi
 #
 #
 # Domain Record Iteration
-# A    NS    MX    CNAME   SOA?    TXT?     DMK?
+# DMK?
 #
 #
 #
